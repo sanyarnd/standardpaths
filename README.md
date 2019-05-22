@@ -73,27 +73,29 @@ More details can be found in [JavaDocs](https://sanyarnd.github.io/standardpaths
 * `Windows`: `%USERPROFILE%`
 * `Linux`: `~`
 
-#### Desktop
+#### User directories
+
+desktop:
 * `Windows`: `%USERPROFILE%/Desktop`
 * `Linux`: `~/Desktop`
 
-#### Documents
+documents:
 * `Windows`: `%USERPROFILE%/Documents`
 * `Linux`: `~/Documents`
 
-#### Downloads
+downloads:
 * `Windows`: `%USERPROFILE%/Downloads`
 * `Linux`: `~/Downloads`
 
-#### Music
+music:
 * `Windows`: `%USERPROFILE%/Music`
 * `Linux`: `~/Music`
 
-#### Pictures
+pictures:
 * `Windows`: `%USERPROFILE%/Pictures`
 * `Linux`: `~/Pictures`
 
-#### Videos
+videos:
 * `Windows`: `%USERPROFILE%/Videos`
 * `Linux`: `~/Videos`
 
