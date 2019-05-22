@@ -48,9 +48,9 @@ deploy:
   - provider: releases
     api_key: $GITHUB_API_KEY
     file:
-      - /home/travis/build/sanyarnd/standard-paths/target/standard-paths-$TRAVIS_TAG.jar
-      - /home/travis/build/sanyarnd/standard-paths/target/standard-paths-$TRAVIS_TAG-javadoc.jar
-      - /home/travis/build/sanyarnd/standard-paths/target/standard-paths-$TRAVIS_TAG-sources.jar
+      - /home/travis/build/sanyarnd/standardpaths/target/standard-paths-$TRAVIS_TAG.jar
+      - /home/travis/build/sanyarnd/standardpaths/target/standard-paths-$TRAVIS_TAG-javadoc.jar
+      - /home/travis/build/sanyarnd/standardpaths/target/standard-paths-$TRAVIS_TAG-sources.jar
     skip_cleanup: true
     on:
       tags: true

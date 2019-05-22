@@ -6,12 +6,12 @@
 
     <groupId>io.github.sanyarnd</groupId>
     <artifactId>standard-paths</artifactId>
-    <version>1.0</version>
+    <version>1.0.1</version>
     <url>https://sanyarnd.github.io/standardpaths/</url>
     <packaging>jar</packaging>
 
     <name>Standard Paths</name>
-    <description>Provides cross platform access to the common directories such as AppData, Desktop or /tmp</description>
+    <description>Provides cross platform access to the common directories such as AppData, Desktop or tmp</description>
     <inceptionYear>2019</inceptionYear>
 
     <licenses>

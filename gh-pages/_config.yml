@@ -3,7 +3,7 @@ plugins:
   - jekyll-sitemap
 
 title: "Standard Paths"
-description: "Provides cross platform access to the common directories such as AppData, Desktop or /tmp"
+description: "Provides cross platform access to the common directories such as AppData, Desktop or tmp"
 
 github:
   owner_name: "Alexander Biryukov"

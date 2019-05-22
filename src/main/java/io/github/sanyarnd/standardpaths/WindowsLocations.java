@@ -62,8 +62,8 @@ final class WindowsLocations implements LocationDelegate {
             Pointer pStr = ppStr.getValue();
             StringBuilder sb = new StringBuilder();
             // we'll never reach 4096 anyway
-            final int maxLengthInBytes = 4096;
-            for (int i = 0; i < maxLengthInBytes; ++i) {
+            final long maxLengthInBytes = 4096;
+            for (long i = 0; i < maxLengthInBytes; ++i) {
                 // SHGetKnownFolderPath returns wchar_t string, and offset is calculated in bytes
                 // so we actually need i*2 for correct indexation
                 char c = pStr.getChar(i * 2);

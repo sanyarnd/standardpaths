@@ -2,7 +2,7 @@
 [![Build Status](https://travis-ci.com/sanyarnd/standardpaths.svg?branch=master)](https://travis-ci.com/sanyarnd/standardpaths)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=io.github.sanyarnd%3Astandard-paths&metric=coverage)](https://sonarcloud.io/dashboard?id=io.github.sanyarnd%3Astandard-paths)
 
-Standard Paths is a small library which provides cross platform access to the common directories such as `AppData`, `Desktop` or `/tmp`.
+Standard Paths is a small library which provides cross platform access to the common directories such as `AppData`, `Desktop` or `tmp`.
 
 # Features
 * All major distributions: `Windows`, `Linux`, `MacOS` (not yet implemented)

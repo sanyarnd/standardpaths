@@ -53,11 +53,10 @@ enum OS {
      */
     @NonNull
     public static OS current() {
-        return name.contains("linux") ? LINUX : (
-            name.contains("mac") ? MAC : (
-                name.contains("win") ? WINDOWS : UNKNOWN
-            )
-        );
+        OS win = name.contains("win") ? WINDOWS : UNKNOWN;
+        OS nonLinux = name.contains("mac") ? MAC : win;
+
+        return name.contains("linux") ? LINUX : nonLinux;
     }
 
     public static boolean isWindows() { return OS.current() == OS.WINDOWS; }
