@@ -1,0 +1,61 @@
+language: java
+
+dist: xenial
+sudo: false
+
+jdk:
+  - openjdk8
+
+cache:
+  directories:
+    - $HOME/.m2
+    - $HOME/.sonar/cache
+
+git:
+  depth: false
+
+addons:
+  sonarcloud:
+    organization: sanyarnd-github
+    token:
+      secure: $SONAR_API_KEY
+
+before_install:
+  - chmod +x mvnw
+install:
+  mvn clean org.jacoco:jacoco-maven-plugin:prepare-agent install -B -V
+
+after_success:
+  - mvn org.jacoco:jacoco-maven-plugin:report
+  - mvn pvsstudio:pvsCredentials -Dpvsstudio.username="PVS-Studio Free" -Dpvsstudio.serial="FREE-FREE-FREE-FREE"
+  - mvn pvsstudio:pvsAnalyze
+  - mvn sonar:sonar -DskipTests=true \
+    -Dmaven.install.skip=true \
+    -Dsonar.coverage.jacoco.xmlReportPaths="target/site/jacoco/jacoco.xml" \
+    -Dsonar.pvs-studio.reportPath="PVS-Studio.xml"
+
+before_deploy:
+  - cp -r target/apidocs gh-pages
+  - cp README.md gh-pages/README.md
+  - cp CHANGELOG.md gh-pages/CHANGELOG.md
+deploy:
+  - provider: pages
+    github_token: $GITHUB_API_KEY
+    local_dir: gh-pages
+    skip_cleanup: true
+    on:
+      tags: true
+  - provider: releases
+    api_key: $GITHUB_API_KEY
+    file:
+      - /home/travis/build/sanyarnd/standard-paths/target/standard-paths-$TRAVIS_TAG.jar
+      - /home/travis/build/sanyarnd/standard-paths/target/standard-paths-$TRAVIS_TAG-javadoc.jar
+      - /home/travis/build/sanyarnd/standard-paths/target/standard-paths-$TRAVIS_TAG-sources.jar
+    skip_cleanup: true
+    on:
+      tags: true
+  - provider: script
+    script: mvn --settings .m2/settings.xml deploy -DskipTests=true
+    skip_cleanup: true
+    on:
+      tags: true

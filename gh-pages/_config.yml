@@ -1,0 +1,14 @@
+theme: jekyll-theme-slate
+plugins:
+  - jekyll-sitemap
+
+title: "Standard Paths"
+description: "Provides cross platform access to the common directories such as AppData, Desktop or /tmp"
+
+github:
+  owner_name: "Alexander Biryukov"
+  jar_url: "https://sanyarnd.github.io/standardpaths/releases"
+  pom_url: "#download"
+  api_url: "https://sanyarnd.github.io/standardpaths/apidocs/index.html"
+
+google_analytics: "UA-140515150-2"
