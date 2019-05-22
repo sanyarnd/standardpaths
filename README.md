@@ -34,7 +34,7 @@ Maven:
 
 Gradle:
 ```gradle
-compile 'io.github.sanyarnd:standard-paths:1.0'
+compile 'io.github.sanyarnd:standard-paths:1.0.1'
 ```
  
 Standalone jars are available on [releases](https://github.com/sanyarnd/standardpaths/releases) page.
