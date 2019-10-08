@@ -1,41 +1,23 @@
-// This is an open source non-commercial project. Dear PVS-Studio, please check it.
-// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
-//
-//                     Copyright 2019 Alexander Biryukov
-//
-//     Licensed under the Apache License, Version 2.0 (the "License");
-//     you may not use this file except in compliance with the License.
-//     You may obtain a copy of the License at
-//
-//               http://www.apache.org/licenses/LICENSE-2.0
-//
-//     Unless required by applicable law or agreed to in writing, software
-//     distributed under the License is distributed on an "AS IS" BASIS,
-//     WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//     See the License for the specific language governing permissions and
-//     limitations under the License.
-
 package io.github.sanyarnd.standardpaths;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.nio.file.Path;
 
-import org.checkerframework.checker.nullness.qual.NonNull;
-
 /**
  * Collection of methods, which return paths to the most common system locations.
- * <p>
- * Paths in methods' documentation are examples.<br>
+ *
+ * <p>Paths in methods' documentation are examples.<br>
  * Internal implementation will always do its best utilizing system API and retrieve the real path.<br>
  *
  * @author Alexander Biryukov
  */
 public final class StandardPaths {
-    private static LocationDelegate delegate = getDelegate();
+    private static final LocationDelegate DELEGATE = getDelegate();
 
     private StandardPaths() { /* utility class */ }
 
-    @NonNull
-    private static LocationDelegate getDelegate() {
+    private static @NotNull LocationDelegate getDelegate() {
         switch (OS.current()) {
             case WINDOWS:
                 return new WindowsLocations();
@@ -59,8 +41,9 @@ public final class StandardPaths {
      * @return path to runtime/cache directory
      * @throws NoSuchPathException if it's impossible to acquire path to directory
      */
-    @NonNull
-    public static Path cache() { return delegate.cache(); }
+    public static @NotNull Path cache() {
+        return DELEGATE.cache();
+    }
 
     /**
      * Directory which can use used to store configuration data:
@@ -73,8 +56,9 @@ public final class StandardPaths {
      * @return path to config directory
      * @throws NoSuchPathException if it's impossible to acquire path to directory
      */
-    @NonNull
-    public static Path config() { return delegate.config(); }
+    public static @NotNull Path config() {
+        return DELEGATE.config();
+    }
 
     /**
      * Directory which can use used to store data:
@@ -82,15 +66,17 @@ public final class StandardPaths {
      * <li>Win:  {@code %USERPROFILE%/AppData/Roaming};</li>
      * <li>Unix: {@code $HOME/.local/share}.</li>
      * </ul>
-     * Note that Windows will sync changes with domain server. If not desired, Consider using {@link #dataLocal()} instead.
-     * <p>
-     * Usually you'd like to invoke {@code resolve("<appname>")} on return value to create subdirectory.
+     * Note that Windows will sync changes with domain server.
+     * If not desired, Consider using {@link #dataLocal()} instead.
+     *
+     * <p>Usually you'd like to invoke {@code resolve("<appname>")} on return value to create subdirectory.
      *
      * @return path to config directory
      * @throws NoSuchPathException if it's impossible to acquire path to directory
      */
-    @NonNull
-    public static Path data() { return delegate.data(); }
+    public static @NotNull Path data() {
+        return DELEGATE.data();
+    }
 
     /**
      * Directory which can use used to store data:
@@ -103,8 +89,9 @@ public final class StandardPaths {
      * @return path to config directory
      * @throws NoSuchPathException if it's impossible to acquire path to directory
      */
-    @NonNull
-    public static Path dataLocal() { return delegate.dataLocal(); }
+    public static @NotNull Path dataLocal() {
+        return DELEGATE.dataLocal();
+    }
 
     /**
      * Temp files directory:
@@ -116,8 +103,9 @@ public final class StandardPaths {
      * @return path to home directory
      * @throws NoSuchPathException if it's impossible to acquire path to directory
      */
-    @NonNull
-    public static Path temp() { return delegate.temp(); }
+    public static @NotNull Path temp() {
+        return DELEGATE.temp();
+    }
 
     /**
      * Current user Home directory:
@@ -129,8 +117,9 @@ public final class StandardPaths {
      * @return path to home directory
      * @throws NoSuchPathException if it's impossible to acquire path to directory
      */
-    @NonNull
-    public static Path home() { return delegate.home(); }
+    public static @NotNull Path home() {
+        return DELEGATE.home();
+    }
 
     /**
      * Desktop directory:
@@ -142,8 +131,9 @@ public final class StandardPaths {
      * @return path to desktop directory
      * @throws NoSuchPathException if it's impossible to acquire path to directory
      */
-    @NonNull
-    public static Path desktop() { return delegate.desktop(); }
+    public static @NotNull Path desktop() {
+        return DELEGATE.desktop();
+    }
 
     /**
      * Documents directory:
@@ -155,8 +145,9 @@ public final class StandardPaths {
      * @return path to documents directory
      * @throws NoSuchPathException if it's impossible to acquire path to directory
      */
-    @NonNull
-    public static Path documents() { return delegate.documents(); }
+    public static @NotNull Path documents() {
+        return DELEGATE.documents();
+    }
 
     /**
      * Downloads directory:
@@ -168,8 +159,9 @@ public final class StandardPaths {
      * @return path to downloads directory
      * @throws NoSuchPathException if it's impossible to acquire path to directory
      */
-    @NonNull
-    public static Path downloads() { return delegate.downloads(); }
+    public static @NotNull Path downloads() {
+        return DELEGATE.downloads();
+    }
 
     /**
      * Music directory:
@@ -181,8 +173,9 @@ public final class StandardPaths {
      * @return path to music directory
      * @throws NoSuchPathException if it's impossible to acquire path to directory
      */
-    @NonNull
-    public static Path music() { return delegate.music(); }
+    public static @NotNull Path music() {
+        return DELEGATE.music();
+    }
 
     /**
      * Pictures directory:
@@ -194,8 +187,9 @@ public final class StandardPaths {
      * @return path to pictures directory
      * @throws NoSuchPathException if it's impossible to acquire path to directory
      */
-    @NonNull
-    public static Path pictures() { return delegate.pictures(); }
+    public static @NotNull Path pictures() {
+        return DELEGATE.pictures();
+    }
 
     /**
      * Videos directory:
@@ -207,6 +201,7 @@ public final class StandardPaths {
      * @return path to videos directory
      * @throws NoSuchPathException if it's impossible to acquire path to directory
      */
-    @NonNull
-    public static Path videos() { return delegate.videos(); }
+    public static @NotNull Path videos() {
+        return DELEGATE.videos();
+    }
 }
