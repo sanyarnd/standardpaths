@@ -7,9 +7,9 @@ import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
 @Tag("integration")
-@EnabledOnOs(OS.LINUX)
-class LinuxLocationsIT {
-    private final LocationDelegate locations = new LinuxLocations();
+@EnabledOnOs(OS.MAC)
+class MacLocationsIT {
+    private final LocationDelegate locations = new MacLocations();
 
     @Test
     void cache_test() {

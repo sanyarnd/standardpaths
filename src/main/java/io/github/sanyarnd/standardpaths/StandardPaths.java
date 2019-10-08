@@ -18,7 +18,7 @@ public final class StandardPaths {
     private StandardPaths() { /* utility class */ }
 
     private static @NotNull LocationDelegate getDelegate() {
-        switch (OS.current()) {
+        switch (Os.current()) {
             case WINDOWS:
                 return new WindowsLocations();
             case LINUX:
@@ -26,7 +26,7 @@ public final class StandardPaths {
             case MAC:
                 throw new IllegalArgumentException("MacOS is currently unsupported, please consider creating PR");
             default:
-                throw new IllegalArgumentException("Unsupported OS: " + OS.current());
+                throw new IllegalArgumentException("Unsupported OS: " + Os.current());
         }
     }
 

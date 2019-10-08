@@ -9,7 +9,7 @@ import java.util.Locale;
  *
  * @author Alexander Biryukov
  */
-enum OS {
+enum Os {
     /**
      * Microsoft Windows operating system.
      */
@@ -34,9 +34,9 @@ enum OS {
      *
      * @return current OS
      */
-    public static @NotNull OS current() {
-        final OS win = OS_NAME.contains("win") ? WINDOWS : UNKNOWN;
-        final OS nonLinux = OS_NAME.contains("mac") ? MAC : win;
+    public static @NotNull Os current() {
+        final Os win = OS_NAME.contains("win") ? WINDOWS : UNKNOWN;
+        final Os nonLinux = OS_NAME.contains("mac") ? MAC : win;
 
         return OS_NAME.contains("linux") ? LINUX : nonLinux;
     }

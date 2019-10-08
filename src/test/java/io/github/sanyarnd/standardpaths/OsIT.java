@@ -6,28 +6,28 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
 
 @Tag("integration")
-public class OsTest {
+class OsIT {
     @Test
     @EnabledOnOs(org.junit.jupiter.api.condition.OS.WINDOWS)
-    public void windows_test() {
-        Assertions.assertTrue(OS.isWindows());
+    void windows_test() {
+        Assertions.assertTrue(Os.isWindows());
     }
 
     @Test
     @EnabledOnOs(org.junit.jupiter.api.condition.OS.LINUX)
-    public void linux_test() {
-        Assertions.assertTrue(OS.isLinux());
+    void linux_test() {
+        Assertions.assertTrue(Os.isLinux());
     }
 
     @Test
     @EnabledOnOs(org.junit.jupiter.api.condition.OS.MAC)
-    public void mac_test() {
-        Assertions.assertTrue(OS.isMac());
+    void mac_test() {
+        Assertions.assertTrue(Os.isMac());
     }
 
     @Test
     @EnabledOnOs(org.junit.jupiter.api.condition.OS.OTHER)
-    public void unknown_test() {
-        Assertions.assertTrue(OS.isUnknown());
+    void unknown_test() {
+        Assertions.assertTrue(Os.isUnknown());
     }
 }

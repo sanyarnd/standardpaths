@@ -46,8 +46,9 @@ final class WindowsLocations implements LocationDelegate {
             final long maxLengthInBytes = 4096;
             for (long i = 0; i < maxLengthInBytes; ++i) {
                 // SHGetKnownFolderPath returns wchar_t string, and offset is calculated in bytes
-                // so we actually need i*2 for correct indexation
+                // so we actually need i*2 for correct indexing
                 final char c = pStr.getChar(i * 2);
+                // function returns null-terminated string
                 if (c == '\u0000') {
                     break;
                 }
@@ -111,7 +112,7 @@ final class WindowsLocations implements LocationDelegate {
 
         if (isOpened) {
             final IntByReference pSize = new IntByReference(0);
-            // this call must return false, and pSize must contain the required buffer size
+            // by documentation, such call must return false with pSize containing required buffer size
             final boolean failedCall = Userenv.INSTANCE.GetUserProfileDirectory(pToken.getValue(), null, pSize);
             if (!failedCall && pSize.getValue() > 0) {
                 // now it's the real call

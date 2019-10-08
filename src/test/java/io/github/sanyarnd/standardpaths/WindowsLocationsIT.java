@@ -7,78 +7,67 @@ import org.junit.jupiter.api.condition.EnabledOnOs;
 import org.junit.jupiter.api.condition.OS;
 
 @Tag("integration")
-public class WindowsLocationsIT {
-    private final WindowsLocations locations = new WindowsLocations();
+@EnabledOnOs(OS.WINDOWS)
+class WindowsLocationsIT {
+    private final LocationDelegate locations = new WindowsLocations();
 
     @Test
-    @EnabledOnOs(OS.WINDOWS)
-    public void cache_test() {
+    void cache_test() {
         Assertions.assertNotNull(locations.cache());
     }
 
     @Test
-    @EnabledOnOs(OS.WINDOWS)
-    public void config_test() {
+    void config_test() {
         Assertions.assertNotNull(locations.config());
     }
 
     @Test
-    @EnabledOnOs(OS.WINDOWS)
-    public void data_test() {
+    void data_test() {
         Assertions.assertNotNull(locations.data());
     }
 
     @Test
-    @EnabledOnOs(OS.WINDOWS)
-    public void dataLocal_test() {
+    void dataLocal_test() {
         Assertions.assertNotNull(locations.dataLocal());
     }
 
     @Test
-    @EnabledOnOs(OS.WINDOWS)
-    public void temp_test() {
+    void temp_test() {
         Assertions.assertNotNull(locations.temp());
     }
 
     @Test
-    @EnabledOnOs(OS.WINDOWS)
-    public void home_test() {
+    void home_test() {
         Assertions.assertNotNull(locations.home());
     }
 
     @Test
-    @EnabledOnOs(OS.WINDOWS)
-    public void desktop_test() {
+    void desktop_test() {
         Assertions.assertNotNull(locations.desktop());
     }
 
     @Test
-    @EnabledOnOs(OS.WINDOWS)
-    public void documents_test() {
+    void documents_test() {
         Assertions.assertNotNull(locations.documents());
     }
 
     @Test
-    @EnabledOnOs(OS.WINDOWS)
-    public void downloads_test() {
+    void downloads_test() {
         Assertions.assertNotNull(locations.downloads());
     }
 
     @Test
-    @EnabledOnOs(OS.WINDOWS)
-    public void music_test() {
+    void music_test() {
         Assertions.assertNotNull(locations.music());
     }
 
     @Test
-    @EnabledOnOs(OS.WINDOWS)
-    public void pictures_test() {
+    void pictures_test() {
         Assertions.assertNotNull(locations.pictures());
     }
 
     @Test
-    @EnabledOnOs(OS.WINDOWS)
-    public void videos_test() {
+    void videos_test() {
         Assertions.assertNotNull(locations.videos());
     }
 }
