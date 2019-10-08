@@ -53,7 +53,7 @@ deploy:
       tags: true
   - provider: script
     script: ./mvnw deploy --settings .m2/settings.xml -DskipTests
-      --activate-profiles deploy-bintray
+      --activate-profiles deploy-bintray,create-javadoc-and-sources
       --show-version --no-transfer-progress --errors
     skip_cleanup: true
     on:
