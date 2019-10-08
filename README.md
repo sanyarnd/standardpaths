@@ -1,15 +1,16 @@
 # Standard Paths
 [![Build Status](https://travis-ci.com/sanyarnd/standardpaths.svg?branch=master)](https://travis-ci.com/sanyarnd/standardpaths)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=io.github.sanyarnd%3Astandard-paths&metric=coverage)](https://sonarcloud.io/dashboard?id=io.github.sanyarnd%3Astandard-paths)
+[![Maintainability Rating](https://sonarcloud.io/api/project_badges/measure?project=io.github.sanyarnd%3Astandard-paths&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=io.github.sanyarnd%3Astandard-paths)
 
 Standard Paths is a small library which provides cross platform access to the common directories such as `AppData`, `Desktop` or `tmp`.
+
+Target JVM version is 8.
 
 # Features
 * All major distributions: `Windows`, `Linux`, `MacOS` (not yet implemented)
 * Ease of use
 * NIO-based 
 * Lightweight (~10kb)
-* JDK8+ support
 
 The package has [jna-platform](https://github.com/java-native-access/jna) as transitive dependency (~2.5mb).
 
@@ -28,13 +29,13 @@ Maven:
 <dependency> 
     <groupId>io.github.sanyarnd</groupId> 
     <artifactId>standard-paths</artifactId>
-    <version>1.0.1</version>
+    <version>1.0.2</version>
 </dependency>
 ```
 
 Gradle:
 ```gradle
-compile 'io.github.sanyarnd:standard-paths:1.0.1'
+compile 'io.github.sanyarnd:standard-paths:1.0.2'
 ```
  
 Standalone jars are available on [releases](https://github.com/sanyarnd/standardpaths/releases) page.
