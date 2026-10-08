@@ -1,1 +1,1 @@
-typeSearchIndex = [{"l":"All Classes","url":"allclasses-index.html"},{"p":"io.github.sanyarnd.standardpaths","l":"NoSuchPathException"},{"p":"io.github.sanyarnd.standardpaths","l":"StandardPaths"}]
+typeSearchIndex = [{"l":"All Classes and Interfaces","u":"allclasses-index.html","k":"18"},{"p":"io.github.sanyarnd.standardpaths","l":"AppPaths"},{"p":"io.github.sanyarnd.standardpaths","l":"StandardPaths"}];updateSearchResults();
