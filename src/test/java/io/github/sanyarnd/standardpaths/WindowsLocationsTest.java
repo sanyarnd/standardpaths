@@ -1,16 +1,15 @@
 package io.github.sanyarnd.standardpaths;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.Map;
+import java.util.Optional;
 import org.instancio.junit.Given;
 import org.instancio.junit.InstancioExtension;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,148 +28,209 @@ class WindowsLocationsTest {
     Path tempDir;
 
     @Mock
-    WindowsApi api;
+    WindowsRegistry registry;
 
+    private Path home;
     private FakeEnvironment env;
     private WindowsLocations locations;
 
     @BeforeEach
     void setUp() {
-        env = spy(new FakeEnvironment());
-        locations = new WindowsLocations(api, env);
+        home = tempDir.resolve("home");
+        env = new FakeEnvironment().property("user.home", home);
+        locations = new WindowsLocations(registry, env);
     }
 
-    @ParameterizedTest
-    @CsvSource({
-        "CACHE, LOCAL_APP_DATA",
-        "CONFIG, LOCAL_APP_DATA",
-        "DATA, ROAMING_APP_DATA",
-        "DATA_LOCAL, LOCAL_APP_DATA",
-        "HOME, PROFILE",
-        "DESKTOP, DESKTOP",
-        "DOCUMENTS, DOCUMENTS",
-        "DOWNLOADS, DOWNLOADS",
-        "MUSIC, MUSIC",
-        "PICTURES, PICTURES",
-        "VIDEOS, VIDEOS"
-    })
-    void usesKnownFolder(final Location location, final KnownFolder folder) {
-        final Path path = tempDir.resolve(folder.name());
-        when(api.knownFolder(folder)).thenReturn(path);
-
-        assertThat(location.of(locations)).isEqualTo(path);
-        verifyNoInteractions(env);
-    }
-
-    @ParameterizedTest
-    @CsvSource({
-        "CACHE, LOCAL_APP_DATA",
-        "CONFIG, LOCAL_APP_DATA",
-        "DATA, ROAMING_APP_DATA",
-        "DATA_LOCAL, LOCAL_APP_DATA",
-        "DESKTOP, DESKTOP",
-        "DOCUMENTS, DOCUMENTS",
-        "DOWNLOADS, DOWNLOADS",
-        "MUSIC, MUSIC",
-        "PICTURES, PICTURES",
-        "VIDEOS, VIDEOS"
-    })
-    void propagatesKnownFolderFailure(final Location location, final KnownFolder folder) {
-        final NoSuchPathException failure = new NoSuchPathException("failure");
-        when(api.knownFolder(folder)).thenThrow(failure);
-
-        assertThatThrownBy(() -> location.of(locations)).isSameAs(failure);
+    private static String sep() {
+        return File.separator;
     }
 
     @Test
-    void tempUsesSystemCall() {
-        when(api.tempDirectory()).thenReturn(tempDir);
+    void homeFromProperty() {
+        env.env("USERPROFILE", tempDir);
 
-        assertThat(locations.temp()).isEqualTo(tempDir);
-        verifyNoInteractions(env);
-    }
-
-    @Test
-    void tempFallsBackToTempVariable() {
-        when(api.tempDirectory()).thenThrow(new NoSuchPathException("failure"));
-        env.env("TEMP", tempDir).env("TMP", tempDir.resolve("tmp"));
-
-        assertThat(locations.temp()).isEqualTo(tempDir);
-    }
-
-    @Test
-    void tempFallsBackToTmpVariable() {
-        when(api.tempDirectory()).thenThrow(new NoSuchPathException("failure"));
-        env.env("TEMP", "relative").env("TMP", tempDir);
-
-        assertThat(locations.temp()).isEqualTo(tempDir);
-    }
-
-    @Test
-    void tempFallsBackToProperty() {
-        when(api.tempDirectory()).thenThrow(new NoSuchPathException("failure"));
-        env.property("java.io.tmpdir", tempDir);
-
-        assertThat(locations.temp()).isEqualTo(tempDir);
-    }
-
-    @Test
-    void tempRethrowsSystemCallFailure() {
-        final NoSuchPathException failure = new NoSuchPathException("failure");
-        when(api.tempDirectory()).thenThrow(failure);
-
-        assertThatThrownBy(locations::temp).isSameAs(failure);
+        assertThat(locations.home()).contains(home);
     }
 
     @Test
     void homeFallsBackToUserProfile() {
-        when(api.knownFolder(KnownFolder.PROFILE)).thenThrow(new NoSuchPathException("failure"));
-        env.env("USERPROFILE", tempDir).env("HOMEPATH", tempDir.resolve("other"));
+        final WindowsLocations noProperty =
+                new WindowsLocations(registry, new FakeEnvironment().env("USERPROFILE", home));
 
-        assertThat(locations.home()).isEqualTo(tempDir);
+        assertThat(noProperty.home()).contains(home);
     }
 
     @Test
-    void homeFallsBackToHomeDriveAndPath() {
-        when(api.knownFolder(KnownFolder.PROFILE)).thenThrow(new NoSuchPathException("failure"));
+    void homeIsUnavailable() {
+        assertThat(new WindowsLocations(registry, new FakeEnvironment()).home()).isEmpty();
+    }
+
+    @Test
+    void tempFromProperty() {
+        env.property("java.io.tmpdir", tempDir).env("TEMP", home);
+
+        assertThat(locations.temp()).contains(tempDir);
+    }
+
+    @Test
+    void tempFallsBackToTempVariable() {
+        env.env("TEMP", tempDir).env("TMP", home);
+
+        assertThat(locations.temp()).contains(tempDir);
+    }
+
+    @Test
+    void tempFallsBackToTmpVariable() {
+        env.env("TEMP", "relative").env("TMP", tempDir);
+
+        assertThat(locations.temp()).contains(tempDir);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "CACHE, LOCALAPPDATA",
+        "DATA_LOCAL, LOCALAPPDATA",
+        "STATE, LOCALAPPDATA",
+        "CONFIG, APPDATA",
+        "DATA, APPDATA"
+    })
+    void appDataFromVariable(final Location location, final String variable) {
+        env.env(variable, tempDir.resolve(variable));
+
+        assertThat(location.of(locations)).contains(tempDir.resolve(variable));
+        verifyNoInteractions(registry);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "CACHE, Local AppData",
+        "DATA_LOCAL, Local AppData",
+        "STATE, Local AppData",
+        "CONFIG, AppData",
+        "DATA, AppData"
+    })
+    void appDataFromRegistry(final Location location, final String valueName) {
+        env.env("USERPROFILE", home);
+        when(registry.userShellFolders()).thenReturn(Map.of(valueName, "%USERPROFILE%" + sep() + "Custom"));
+
+        assertThat(location.of(locations)).contains(home.resolve("Custom"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"CACHE, Local", "DATA_LOCAL, Local", "STATE, Local", "CONFIG, Roaming", "DATA, Roaming"})
+    void appDataDefaultsToProfile(final Location location, final String directory) {
+        when(registry.userShellFolders()).thenReturn(Map.of());
+
+        assertThat(location.of(locations)).contains(home.resolve("AppData").resolve(directory));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "DESKTOP, Desktop",
+        "DOCUMENTS, Personal",
+        "DOWNLOADS, {374DE290-123F-4565-9164-39C4925E467B}",
+        "MUSIC, My Music",
+        "PICTURES, My Pictures",
+        "VIDEOS, My Video",
+        "TEMPLATES, Templates"
+    })
+    void userDirFromRegistry(final Location location, final String valueName) {
+        env.env("USERPROFILE", home);
+        when(registry.userShellFolders()).thenReturn(Map.of(valueName, "%USERPROFILE%" + sep() + "Moved " + valueName));
+
+        assertThat(location.of(locations)).contains(home.resolve("Moved " + valueName));
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "DESKTOP, Desktop",
+        "DOCUMENTS, Documents",
+        "DOWNLOADS, Downloads",
+        "MUSIC, Music",
+        "PICTURES, Pictures",
+        "VIDEOS, Videos"
+    })
+    void userDirDefaultsToProfile(final Location location, final String directory) {
+        when(registry.userShellFolders()).thenReturn(Map.of());
+
+        assertThat(location.of(locations)).contains(home.resolve(directory));
+    }
+
+    @Test
+    void templatesDefaultsToRoamingAppData() {
+        env.env("APPDATA", tempDir.resolve("roaming"));
+        when(registry.userShellFolders()).thenReturn(Map.of());
+
+        assertThat(locations.templates())
+                .contains(tempDir.resolve("roaming")
+                        .resolve("Microsoft")
+                        .resolve("Windows")
+                        .resolve("Templates"));
+    }
+
+    @Test
+    void absoluteRegistryValueIsUsedAsIs() {
+        when(registry.userShellFolders()).thenReturn(Map.of("Desktop", tempDir.toString()));
+
+        assertThat(locations.desktop()).contains(tempDir);
+    }
+
+    @Test
+    void expandsSeveralVariables() {
         final String full = tempDir.toString();
         final int split = full.indexOf(File.separatorChar, 1);
         env.env("HOMEDRIVE", full.substring(0, split)).env("HOMEPATH", full.substring(split));
+        when(registry.userShellFolders()).thenReturn(Map.of("Desktop", "%HOMEDRIVE%%HOMEPATH%" + sep() + "Desktop"));
 
-        assertThat(locations.home()).isEqualTo(tempDir);
+        assertThat(locations.desktop()).contains(tempDir.resolve("Desktop"));
     }
 
     @Test
-    void homeIgnoresHomePathWithoutDrive() {
-        // the old implementation concatenated "null" strings
-        when(api.knownFolder(KnownFolder.PROFILE)).thenThrow(new NoSuchPathException("failure"));
-        env.env("HOMEPATH", tempDir).property("user.home", tempDir.resolve("home"));
+    void unknownVariableMakesValueInvalid() {
+        when(registry.userShellFolders()).thenReturn(Map.of("Desktop", "%UNKNOWN%" + sep() + "Desktop"));
 
-        assertThat(locations.home()).isEqualTo(tempDir.resolve("home"));
+        assertThat(locations.desktop()).contains(home.resolve("Desktop"));
     }
 
     @Test
-    void homeFallsBackToProperty() {
-        when(api.knownFolder(KnownFolder.PROFILE)).thenThrow(new NoSuchPathException("failure"));
-        env.property("user.home", tempDir);
+    void relativeRegistryValueIsIgnored() {
+        when(registry.userShellFolders()).thenReturn(Map.of("Desktop", "Desktop"));
 
-        assertThat(locations.home()).isEqualTo(tempDir);
+        assertThat(locations.desktop()).contains(home.resolve("Desktop"));
+    }
+
+    @Test
+    void registryIsQueriedOnce() {
+        when(registry.userShellFolders()).thenReturn(Map.of());
+
+        locations.desktop();
+        locations.music();
+        locations.videos();
+
+        verify(registry, times(1)).userShellFolders();
+    }
+
+    @Test
+    void runtimeIsAbsent() {
+        assertThat(locations.runtime()).isEmpty();
+        verifyNoInteractions(registry);
+    }
+
+    @Test
+    void publicShareFromVariable() {
+        env.env("PUBLIC", tempDir.resolve("Public"));
+
+        assertThat(locations.publicShare()).contains(tempDir.resolve("Public"));
+    }
+
+    @Test
+    void publicShareIsAbsentWithoutVariable() {
+        assertThat(locations.publicShare()).isEmpty();
     }
 
     @RepeatedTest(3)
-    void homeRethrowsSystemCallFailure(@Given final String message) {
-        final NoSuchPathException failure = new NoSuchPathException(message);
-        when(api.knownFolder(KnownFolder.PROFILE)).thenThrow(failure);
-
-        assertThatThrownBy(locations::home).isSameAs(failure).hasMessage(message);
-    }
-
-    @Test
-    void knownFoldersAreQueriedOnEveryCall() {
-        when(api.knownFolder(KnownFolder.DESKTOP)).thenReturn(tempDir, tempDir.resolve("moved"));
-
-        assertThat(locations.desktop()).isEqualTo(tempDir);
-        assertThat(locations.desktop()).isEqualTo(tempDir.resolve("moved"));
-        verify(env, never()).getenv(anyString());
+    void appDirIsSeparatedByKind(@Given final String app, @Given final String kind) {
+        assertThat(locations.appDir(Optional.of(tempDir), app, kind))
+                .contains(tempDir.resolve(app).resolve(kind));
     }
 }

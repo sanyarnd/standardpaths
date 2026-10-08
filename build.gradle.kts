@@ -13,7 +13,6 @@ plugins {
 val mockitoAgent: Configuration = configurations.create("mockitoAgent") { isTransitive = false }
 
 dependencies {
-    implementation(libs.jna.platform)
     compileOnly(libs.jspecify)
 
     errorprone(libs.errorprone.core)

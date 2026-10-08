@@ -1,6 +1,7 @@
 package io.github.sanyarnd.standardpaths;
 
 import java.nio.file.Path;
+import java.util.Optional;
 
 /// macOS locations.
 ///
@@ -11,65 +12,79 @@ import java.nio.file.Path;
 ///
 /// @author Alexander Biryukov
 final class MacLocations extends PosixLocations {
+    private static final String APPLICATION_SUPPORT = "Library/Application Support";
+
     MacLocations(final Environment environment) {
         super(environment);
     }
 
     @Override
-    public Path cache() {
-        return library().resolve("Caches");
+    public Optional<Path> cache() {
+        return inHome("Library/Caches");
     }
 
     @Override
-    public Path config() {
-        return applicationSupport();
+    public Optional<Path> config() {
+        return inHome(APPLICATION_SUPPORT);
     }
 
     @Override
-    public Path data() {
-        return applicationSupport();
+    public Optional<Path> data() {
+        return inHome(APPLICATION_SUPPORT);
     }
 
     @Override
-    public Path dataLocal() {
-        return applicationSupport();
+    public Optional<Path> dataLocal() {
+        return inHome(APPLICATION_SUPPORT);
     }
 
     @Override
-    public Path desktop() {
-        return home().resolve("Desktop");
+    public Optional<Path> state() {
+        return inHome(APPLICATION_SUPPORT);
     }
 
     @Override
-    public Path documents() {
-        return home().resolve("Documents");
+    public Optional<Path> runtime() {
+        return Optional.empty();
     }
 
     @Override
-    public Path downloads() {
-        return home().resolve("Downloads");
+    public Optional<Path> desktop() {
+        return inHome("Desktop");
     }
 
     @Override
-    public Path music() {
-        return home().resolve("Music");
+    public Optional<Path> documents() {
+        return inHome("Documents");
     }
 
     @Override
-    public Path pictures() {
-        return home().resolve("Pictures");
+    public Optional<Path> downloads() {
+        return inHome("Downloads");
     }
 
     @Override
-    public Path videos() {
-        return home().resolve("Movies");
+    public Optional<Path> music() {
+        return inHome("Music");
     }
 
-    private Path library() {
-        return home().resolve("Library");
+    @Override
+    public Optional<Path> pictures() {
+        return inHome("Pictures");
     }
 
-    private Path applicationSupport() {
-        return library().resolve("Application Support");
+    @Override
+    public Optional<Path> videos() {
+        return inHome("Movies");
+    }
+
+    @Override
+    public Optional<Path> templates() {
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<Path> publicShare() {
+        return inHome("Public");
     }
 }

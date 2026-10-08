@@ -1,100 +1,163 @@
 package io.github.sanyarnd.standardpaths;
 
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
 
 /// Windows locations.
 ///
+/// Application data directories are read from the environment, user directories (Desktop, Documents, etc.) are read
+/// from the registry, which is queried once.
+///
 /// @author Alexander Biryukov
 final class WindowsLocations implements LocationDelegate {
-    private final WindowsApi api;
-    private final Environment env;
+    private static final Pattern VARIABLE = Pattern.compile("%([^%]+)%");
 
-    WindowsLocations(final WindowsApi windowsApi, final Environment environment) {
-        api = windowsApi;
+    private final WindowsRegistry registry;
+    private final Environment env;
+    private volatile @Nullable Map<String, String> shellFolders;
+
+    WindowsLocations(final WindowsRegistry windowsRegistry, final Environment environment) {
+        registry = windowsRegistry;
         env = environment;
     }
 
     @Override
-    public Path cache() {
-        return api.knownFolder(KnownFolder.LOCAL_APP_DATA);
+    public Optional<Path> home() {
+        return env.propertyPath("user.home").or(() -> env.envPath("USERPROFILE"));
     }
 
     @Override
-    public Path config() {
-        return api.knownFolder(KnownFolder.LOCAL_APP_DATA);
+    public Optional<Path> temp() {
+        return env.propertyPath("java.io.tmpdir").or(() -> env.envPath("TEMP")).or(() -> env.envPath("TMP"));
     }
 
     @Override
-    public Path data() {
-        return api.knownFolder(KnownFolder.ROAMING_APP_DATA);
+    public Optional<Path> cache() {
+        return localAppData();
     }
 
     @Override
-    public Path dataLocal() {
-        return api.knownFolder(KnownFolder.LOCAL_APP_DATA);
+    public Optional<Path> config() {
+        return roamingAppData();
     }
 
     @Override
-    public Path temp() {
-        try {
-            return api.tempDirectory();
-        } catch (NoSuchPathException e) {
-            return env.envPath("TEMP")
-                    .or(() -> env.envPath("TMP"))
-                    .or(() -> env.propertyPath("java.io.tmpdir"))
-                    .orElseThrow(() -> e);
+    public Optional<Path> data() {
+        return roamingAppData();
+    }
+
+    @Override
+    public Optional<Path> dataLocal() {
+        return localAppData();
+    }
+
+    @Override
+    public Optional<Path> state() {
+        return localAppData();
+    }
+
+    @Override
+    public Optional<Path> runtime() {
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<Path> desktop() {
+        return userDir("Desktop", "Desktop");
+    }
+
+    @Override
+    public Optional<Path> documents() {
+        return userDir("Personal", "Documents");
+    }
+
+    @Override
+    public Optional<Path> downloads() {
+        return userDir("{374DE290-123F-4565-9164-39C4925E467B}", "Downloads");
+    }
+
+    @Override
+    public Optional<Path> music() {
+        return userDir("My Music", "Music");
+    }
+
+    @Override
+    public Optional<Path> pictures() {
+        return userDir("My Pictures", "Pictures");
+    }
+
+    @Override
+    public Optional<Path> videos() {
+        return userDir("My Video", "Videos");
+    }
+
+    @Override
+    public Optional<Path> templates() {
+        return shellFolder("Templates")
+                .or(() -> roamingAppData()
+                        .map(path ->
+                                path.resolve("Microsoft").resolve("Windows").resolve("Templates")));
+    }
+
+    @Override
+    public Optional<Path> publicShare() {
+        return env.envPath("PUBLIC");
+    }
+
+    // local and roaming directories are shared by different kinds of data
+    @Override
+    public Optional<Path> appDir(final Optional<Path> base, final String app, final String kind) {
+        return base.map(path -> path.resolve(app).resolve(kind));
+    }
+
+    private Optional<Path> localAppData() {
+        return env.envPath("LOCALAPPDATA")
+                .or(() -> shellFolder("Local AppData"))
+                .or(() -> inHome("AppData").map(path -> path.resolve("Local")));
+    }
+
+    private Optional<Path> roamingAppData() {
+        return env.envPath("APPDATA")
+                .or(() -> shellFolder("AppData"))
+                .or(() -> inHome("AppData").map(path -> path.resolve("Roaming")));
+    }
+
+    private Optional<Path> userDir(final String valueName, final String fallback) {
+        return shellFolder(valueName).or(() -> inHome(fallback));
+    }
+
+    private Optional<Path> inHome(final String relative) {
+        return home().map(path -> path.resolve(relative));
+    }
+
+    private Optional<Path> shellFolder(final String valueName) {
+        final String value = shellFolders().get(valueName);
+        return value == null ? Optional.empty() : Environment.absolutePath(expand(value));
+    }
+
+    private Map<String, String> shellFolders() {
+        Map<String, String> result = shellFolders;
+        if (result == null) {
+            result = registry.userShellFolders();
+            shellFolders = result;
         }
+        return result;
     }
 
-    @Override
-    public Path home() {
-        try {
-            return api.knownFolder(KnownFolder.PROFILE);
-        } catch (NoSuchPathException e) {
-            return env.envPath("USERPROFILE")
-                    .or(this::homeDrivePath)
-                    .or(() -> env.propertyPath("user.home"))
-                    .orElseThrow(() -> e);
+    // expands %VARIABLE% references, unknown variables are kept as is
+    private String expand(final String value) {
+        final Matcher matcher = VARIABLE.matcher(value);
+        final StringBuilder sb = new StringBuilder();
+        int last = 0;
+        while (matcher.find()) {
+            final String replacement = env.getenv(matcher.group(1));
+            sb.append(value, last, matcher.start()).append(replacement == null ? matcher.group() : replacement);
+            last = matcher.end();
         }
-    }
-
-    @Override
-    public Path desktop() {
-        return api.knownFolder(KnownFolder.DESKTOP);
-    }
-
-    @Override
-    public Path documents() {
-        return api.knownFolder(KnownFolder.DOCUMENTS);
-    }
-
-    @Override
-    public Path downloads() {
-        return api.knownFolder(KnownFolder.DOWNLOADS);
-    }
-
-    @Override
-    public Path music() {
-        return api.knownFolder(KnownFolder.MUSIC);
-    }
-
-    @Override
-    public Path pictures() {
-        return api.knownFolder(KnownFolder.PICTURES);
-    }
-
-    @Override
-    public Path videos() {
-        return api.knownFolder(KnownFolder.VIDEOS);
-    }
-
-    private Optional<Path> homeDrivePath() {
-        final String drive = env.getenv("HOMEDRIVE");
-        final String path = env.getenv("HOMEPATH");
-        if (drive == null || path == null) {
-            return Optional.empty();
-        }
-        return Environment.absolutePath(drive + path);
+        return sb.append(value.substring(last)).toString();
     }
 }

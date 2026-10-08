@@ -1,7 +1,6 @@
 package io.github.sanyarnd.standardpaths;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -38,7 +37,7 @@ class PosixLocationsTest {
         final FakeEnvironment env =
                 new FakeEnvironment().env("HOME", tempDir).property("user.home", tempDir.resolve("other"));
 
-        assertThat(factory.apply(env).home()).isEqualTo(tempDir);
+        assertThat(factory.apply(env).home()).contains(tempDir);
     }
 
     @ParameterizedTest
@@ -46,23 +45,21 @@ class PosixLocationsTest {
     void homeFromPropertyIfVariableIsInvalid(final String value) {
         final FakeEnvironment env = new FakeEnvironment().env("HOME", value).property("user.home", tempDir);
 
-        assertThat(factory.apply(env).home()).isEqualTo(tempDir);
+        assertThat(factory.apply(env).home()).contains(tempDir);
     }
 
     @Test
     void homeFromPropertyIfVariableIsMissing() {
         final FakeEnvironment env = new FakeEnvironment().property("user.home", tempDir);
 
-        assertThat(factory.apply(env).home()).isEqualTo(tempDir);
+        assertThat(factory.apply(env).home()).contains(tempDir);
     }
 
     @Test
     void homeIsUnavailable() {
         final LocationDelegate locations = factory.apply(new FakeEnvironment().property("user.home", "?"));
 
-        assertThatThrownBy(locations::home)
-                .isInstanceOf(NoSuchPathException.class)
-                .hasMessageContaining("home");
+        assertThat(locations.home()).isEmpty();
     }
 
     @ParameterizedTest
@@ -70,7 +67,7 @@ class PosixLocationsTest {
     void everyLocationExceptTempNeedsHome(final Location location) {
         final LocationDelegate locations = factory.apply(new FakeEnvironment());
 
-        assertThatThrownBy(() -> location.of(locations)).isInstanceOf(NoSuchPathException.class);
+        assertThat(location.of(locations)).isEmpty();
     }
 
     @Test
@@ -78,7 +75,7 @@ class PosixLocationsTest {
         final FakeEnvironment env =
                 new FakeEnvironment().env("TMPDIR", tempDir).property("java.io.tmpdir", tempDir.resolve("other"));
 
-        assertThat(factory.apply(env).temp()).isEqualTo(tempDir);
+        assertThat(factory.apply(env).temp()).contains(tempDir);
     }
 
     @ParameterizedTest
@@ -86,20 +83,31 @@ class PosixLocationsTest {
     void tempFromPropertyIfVariableIsInvalid(final String value) {
         final FakeEnvironment env = new FakeEnvironment().env("TMPDIR", value).property("java.io.tmpdir", tempDir);
 
-        assertThat(factory.apply(env).temp()).isEqualTo(tempDir);
+        assertThat(factory.apply(env).temp()).contains(tempDir);
     }
 
     @Test
     void tempFallsBackToTmp() {
-        assertThat(factory.apply(new FakeEnvironment()).temp()).isEqualTo(Paths.get("/tmp"));
+        assertThat(factory.apply(new FakeEnvironment()).temp()).contains(Paths.get("/tmp"));
     }
 
     @ParameterizedTest
-    @EnumSource(Location.class)
+    @EnumSource(value = Location.class, mode = EnumSource.Mode.EXCLUDE, names = "TEMP")
     void everyLocationIsAbsolute(final Location location) {
-        final LocationDelegate locations =
-                factory.apply(new FakeEnvironment().env("HOME", tempDir).env("TMPDIR", tempDir));
+        final LocationDelegate locations = factory.apply(new FakeEnvironment().env("HOME", tempDir));
 
-        assertThat(location.of(locations)).isAbsolute();
+        location.of(locations).ifPresent(path -> assertThat(path).isAbsolute());
+    }
+
+    @ParameterizedTest
+    @EnumSource(
+            value = Location.class,
+            mode = EnumSource.Mode.EXCLUDE,
+            names = {"HOME", "TEMP", "RUNTIME"})
+    void everyLocationIsInsideHome(final Location location) {
+        final LocationDelegate locations = factory.apply(new FakeEnvironment().env("HOME", tempDir));
+
+        location.of(locations)
+                .ifPresent(path -> assertThat(path).startsWithRaw(tempDir).isNotEqualTo(tempDir));
     }
 }

@@ -1,32 +1,51 @@
 package io.github.sanyarnd.standardpaths;
 
 import java.nio.file.Path;
+import java.util.Optional;
 
 /// Platform-specific locations, mirrors [StandardPaths].
 ///
 /// @author Alexander Biryukov
 interface LocationDelegate {
-    Path cache();
+    Optional<Path> home();
 
-    Path config();
+    Optional<Path> temp();
 
-    Path data();
+    Optional<Path> cache();
 
-    Path dataLocal();
+    Optional<Path> config();
 
-    Path temp();
+    Optional<Path> data();
 
-    Path home();
+    Optional<Path> dataLocal();
 
-    Path desktop();
+    Optional<Path> state();
 
-    Path documents();
+    Optional<Path> runtime();
 
-    Path downloads();
+    Optional<Path> desktop();
 
-    Path music();
+    Optional<Path> documents();
 
-    Path pictures();
+    Optional<Path> downloads();
 
-    Path videos();
+    Optional<Path> music();
+
+    Optional<Path> pictures();
+
+    Optional<Path> videos();
+
+    Optional<Path> templates();
+
+    Optional<Path> publicShare();
+
+    /// Application directory inside the base directory.
+    ///
+    /// @param base base directory, e.g. [#cache()]
+    /// @param app application name
+    /// @param kind directory kind (`cache`, `config`, etc.), used where base directories are shared
+    /// @return application directory
+    default Optional<Path> appDir(final Optional<Path> base, final String app, final String kind) {
+        return base.map(path -> path.resolve(app));
+    }
 }

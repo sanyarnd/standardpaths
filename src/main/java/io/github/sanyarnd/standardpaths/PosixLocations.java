@@ -2,6 +2,7 @@ package io.github.sanyarnd.standardpaths;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Optional;
 
 /// Locations shared by POSIX-like systems.
 ///
@@ -14,16 +15,22 @@ abstract class PosixLocations implements LocationDelegate {
     }
 
     @Override
-    public Path home() {
-        return env.envPath("HOME")
-                .or(() -> env.propertyPath("user.home"))
-                .orElseThrow(() -> new NoSuchPathException("Unable to determine home directory: $HOME is not set"));
+    public Optional<Path> home() {
+        return env.envPath("HOME").or(() -> env.propertyPath("user.home"));
     }
 
     @Override
-    public Path temp() {
+    public Optional<Path> temp() {
         return env.envPath("TMPDIR")
                 .or(() -> env.propertyPath("java.io.tmpdir"))
-                .orElseGet(() -> Paths.get("/tmp"));
+                .or(() -> Optional.of(Paths.get("/tmp")));
+    }
+
+    /// Resolves the path against the home directory.
+    ///
+    /// @param relative relative path
+    /// @return resolved path or empty if home directory is unknown
+    protected Optional<Path> inHome(final String relative) {
+        return home().map(path -> path.resolve(relative));
     }
 }

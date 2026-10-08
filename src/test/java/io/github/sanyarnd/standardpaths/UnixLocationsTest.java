@@ -19,6 +19,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 @ExtendWith(InstancioExtension.class)
 class UnixLocationsTest {
@@ -41,7 +42,8 @@ class UnixLocationsTest {
                 Arguments.of(Location.CACHE, "XDG_CACHE_HOME", ".cache"),
                 Arguments.of(Location.CONFIG, "XDG_CONFIG_HOME", ".config"),
                 Arguments.of(Location.DATA, "XDG_DATA_HOME", ".local/share"),
-                Arguments.of(Location.DATA_LOCAL, "XDG_DATA_HOME", ".local/share"));
+                Arguments.of(Location.DATA_LOCAL, "XDG_DATA_HOME", ".local/share"),
+                Arguments.of(Location.STATE, "XDG_STATE_HOME", ".local/state"));
     }
 
     static Stream<Arguments> userDirs() {
@@ -51,7 +53,9 @@ class UnixLocationsTest {
                 Arguments.of(Location.DOWNLOADS, "XDG_DOWNLOAD_DIR", "Downloads"),
                 Arguments.of(Location.MUSIC, "XDG_MUSIC_DIR", "Music"),
                 Arguments.of(Location.PICTURES, "XDG_PICTURES_DIR", "Pictures"),
-                Arguments.of(Location.VIDEOS, "XDG_VIDEOS_DIR", "Videos"));
+                Arguments.of(Location.VIDEOS, "XDG_VIDEOS_DIR", "Videos"),
+                Arguments.of(Location.TEMPLATES, "XDG_TEMPLATES_DIR", "Templates"),
+                Arguments.of(Location.PUBLIC_SHARE, "XDG_PUBLICSHARE_DIR", "Public"));
     }
 
     static Stream<Arguments> allDirs() {
@@ -66,7 +70,7 @@ class UnixLocationsTest {
     @ParameterizedTest
     @MethodSource("allDirs")
     void defaultsToHomeSubdirectory(final Location location, final String variable, final String fallback) {
-        assertThat(location.of(locations)).isEqualTo(home.resolve(fallback));
+        assertThat(location.of(locations)).contains(home.resolve(fallback));
     }
 
     @ParameterizedTest
@@ -75,7 +79,7 @@ class UnixLocationsTest {
         final Path custom = tempDir.resolve("custom");
         env.env(variable, custom);
 
-        assertThat(location.of(locations)).isEqualTo(custom);
+        assertThat(location.of(locations)).contains(custom);
     }
 
     @ParameterizedTest
@@ -83,7 +87,7 @@ class UnixLocationsTest {
     void relativeVariableIsIgnored(final Location location, final String variable, final String fallback) {
         env.env(variable, "relative/dir");
 
-        assertThat(location.of(locations)).isEqualTo(home.resolve(fallback));
+        assertThat(location.of(locations)).contains(home.resolve(fallback));
     }
 
     @ParameterizedTest
@@ -91,7 +95,15 @@ class UnixLocationsTest {
     void blankVariableIsIgnored(final Location location, final String variable, final String fallback) {
         env.env(variable, "  ");
 
-        assertThat(location.of(locations)).isEqualTo(home.resolve(fallback));
+        assertThat(location.of(locations)).contains(home.resolve(fallback));
+    }
+
+    @ParameterizedTest
+    @MethodSource("allDirs")
+    void absoluteVariableWorksWithoutHome(final Location location, final String variable, final String fallback) {
+        final UnixLocations noHome = new UnixLocations(new FakeEnvironment().env(variable, tempDir));
+
+        assertThat(location.of(noHome)).contains(tempDir);
     }
 
     @Test
@@ -102,11 +114,26 @@ class UnixLocationsTest {
     }
 
     @Test
+    void runtimeFromVariable() {
+        env.env("XDG_RUNTIME_DIR", tempDir.resolve("run"));
+
+        assertThat(locations.runtime()).contains(tempDir.resolve("run"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", " ", "relative/run"})
+    void runtimeHasNoDefault(final String value) {
+        env.env("XDG_RUNTIME_DIR", value);
+
+        assertThat(locations.runtime()).isEmpty();
+    }
+
+    @Test
     void homeIsNotTilde() {
         // the old implementation returned relative "~" path
         final UnixLocations noHome = new UnixLocations(new FakeEnvironment().property("user.home", home));
 
-        assertThat(noHome.home()).isEqualTo(home).isAbsolute();
+        assertThat(noHome.home()).contains(home);
     }
 
     @ParameterizedTest
@@ -114,7 +141,7 @@ class UnixLocationsTest {
     void userDirFromDefaultConfig(final Location location, final String key, final String fallback) throws IOException {
         writeUserDirs(home.resolve(".config"), key + "=\"$HOME/Custom " + fallback + "\"");
 
-        assertThat(location.of(locations)).isEqualTo(home.resolve("Custom " + fallback));
+        assertThat(location.of(locations)).contains(home.resolve("Custom " + fallback));
     }
 
     @ParameterizedTest
@@ -125,7 +152,7 @@ class UnixLocationsTest {
         writeUserDirs(config, key + "=\"$HOME/Custom\"");
         writeUserDirs(home.resolve(".config"), key + "=\"$HOME/Ignored\"");
 
-        assertThat(location.of(locations)).isEqualTo(home.resolve("Custom"));
+        assertThat(location.of(locations)).contains(home.resolve("Custom"));
     }
 
     @ParameterizedTest
@@ -135,24 +162,24 @@ class UnixLocationsTest {
         env.env(key, custom);
         writeUserDirs(home.resolve(".config"), key + "=\"$HOME/Ignored\"");
 
-        assertThat(location.of(locations)).isEqualTo(custom);
+        assertThat(location.of(locations)).contains(custom);
     }
 
     @ParameterizedTest
     @MethodSource("userDirs")
     void missingConfigEntryFallsBackToDefault(final Location location, final String key, final String fallback)
             throws IOException {
-        writeUserDirs(home.resolve(".config"), "XDG_TEMPLATES_DIR=\"$HOME/Templates\"");
+        writeUserDirs(home.resolve(".config"), "XDG_UNKNOWN_DIR=\"$HOME/Unknown\"");
 
-        assertThat(location.of(locations)).isEqualTo(home.resolve(fallback));
+        assertThat(location.of(locations)).contains(home.resolve(fallback));
     }
 
     @ParameterizedTest
-    @CsvSource({"DESKTOP, XDG_DESKTOP_DIR", "DOWNLOADS, XDG_DOWNLOAD_DIR"})
+    @CsvSource({"DESKTOP, XDG_DESKTOP_DIR", "DOWNLOADS, XDG_DOWNLOAD_DIR", "TEMPLATES, XDG_TEMPLATES_DIR"})
     void disabledUserDirPointsToHome(final Location location, final String key) throws IOException {
         writeUserDirs(home.resolve(".config"), key + "=\"$HOME/\"");
 
-        assertThat(location.of(locations)).isEqualTo(home);
+        assertThat(location.of(locations)).contains(home);
     }
 
     @RepeatedTest(5)
@@ -173,11 +200,11 @@ class UnixLocationsTest {
                 "XDG_PICTURES_DIR=\"$HOME/" + pictures + "\"",
                 "XDG_VIDEOS_DIR=\"$HOME/" + videos + "\"");
 
-        assertThat(locations.desktop()).isEqualTo(home.resolve(desktop));
-        assertThat(locations.documents()).isEqualTo(home.resolve(documents));
-        assertThat(locations.downloads()).isEqualTo(home.resolve(downloads));
-        assertThat(locations.music()).isEqualTo(home.resolve(music));
-        assertThat(locations.pictures()).isEqualTo(home.resolve(pictures));
-        assertThat(locations.videos()).isEqualTo(home.resolve(videos));
+        assertThat(locations.desktop()).contains(home.resolve(desktop));
+        assertThat(locations.documents()).contains(home.resolve(documents));
+        assertThat(locations.downloads()).contains(home.resolve(downloads));
+        assertThat(locations.music()).contains(home.resolve(music));
+        assertThat(locations.pictures()).contains(home.resolve(pictures));
+        assertThat(locations.videos()).contains(home.resolve(videos));
     }
 }
