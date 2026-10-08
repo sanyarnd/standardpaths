@@ -1,207 +1,169 @@
 package io.github.sanyarnd.standardpaths;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.nio.file.Path;
 
-/**
- * Collection of methods, which return paths to the most common system locations.
- *
- * <p>Paths in methods' documentation are examples.<br>
- * Internal implementation will always do its best utilizing system API and retrieve the real path.<br>
- *
- * @author Alexander Biryukov
- */
+/// Collection of methods, which return paths to the most common system locations.
+///
+/// Paths in the documentation are examples: the implementation asks the system (WinAPI, XDG configuration, etc.) and
+/// returns the real path. Returned paths are absolute, but the directories are not guaranteed to exist.
+///
+/// Usually you'd like to invoke `resolve("<appname>")` on the returned path to get an application subdirectory.
+///
+/// @author Alexander Biryukov
 public final class StandardPaths {
-    private static final LocationDelegate DELEGATE = getDelegate();
+    private StandardPaths() {}
 
-    private StandardPaths() { /* utility class */ }
+    private static LocationDelegate delegate() {
+        return Holder.DELEGATE;
+    }
 
-    private static @NotNull LocationDelegate getDelegate() {
-        switch (Os.current()) {
+    static LocationDelegate create(final Os os, final Environment environment) {
+        switch (os) {
             case WINDOWS:
-                return new WindowsLocations();
-            case LINUX:
-                return new LinuxLocations();
+                return new WindowsLocations(new JnaWindowsApi(), environment);
             case MAC:
-                throw new IllegalArgumentException("MacOS is currently unsupported, please consider creating PR");
-            default:
-                throw new IllegalArgumentException("Unsupported OS: " + Os.current());
+                return new MacLocations(environment);
+            case UNIX:
+                return new UnixLocations(environment);
         }
+        throw new AssertionError("Unknown OS: " + os);
     }
 
-    /**
-     * Directory which can use used to store runtime/cache data:
-     * <ul>
-     * <li>Win:  {@code %USERPROFILE%/AppData/Local};</li>
-     * <li>Unix: {@code $XDG_CACHE_HOME} (default: {@code $HOME/.cache}).</li>
-     * </ul>
-     * Usually you'd like to invoke {@code resolve("<appname>")} on return value to create subdirectory.
-     *
-     * @return path to runtime/cache directory
-     * @throws NoSuchPathException if it's impossible to acquire path to directory
-     */
-    public static @NotNull Path cache() {
-        return DELEGATE.cache();
+    /// Directory for the non-essential (cached) data:
+    /// - Windows: `%LOCALAPPDATA%` (`%USERPROFILE%\AppData\Local`);
+    /// - macOS: `$HOME/Library/Caches`;
+    /// - Linux: `$XDG_CACHE_HOME` (default: `$HOME/.cache`).
+    ///
+    /// @return path to the cache directory
+    /// @throws NoSuchPathException if it's impossible to determine the path
+    public static Path cache() {
+        return delegate().cache();
     }
 
-    /**
-     * Directory which can use used to store configuration data:
-     * <ul>
-     * <li>Win:  {@code %USERPROFILE%/AppData/Local};</li>
-     * <li>Unix: {@code $XDG_CONFIG_HOME} (default: {@code $HOME/.config}).</li>
-     * </ul>
-     * Usually you'd like to invoke {@code resolve("<appname>")} on return value to create subdirectory.
-     *
-     * @return path to config directory
-     * @throws NoSuchPathException if it's impossible to acquire path to directory
-     */
-    public static @NotNull Path config() {
-        return DELEGATE.config();
+    /// Directory for the configuration files:
+    /// - Windows: `%LOCALAPPDATA%` (`%USERPROFILE%\AppData\Local`);
+    /// - macOS: `$HOME/Library/Application Support`;
+    /// - Linux: `$XDG_CONFIG_HOME` (default: `$HOME/.config`).
+    ///
+    /// @return path to the config directory
+    /// @throws NoSuchPathException if it's impossible to determine the path
+    public static Path config() {
+        return delegate().config();
     }
 
-    /**
-     * Directory which can use used to store data:
-     * <ul>
-     * <li>Win:  {@code %USERPROFILE%/AppData/Roaming};</li>
-     * <li>Unix: {@code $HOME/.local/share}.</li>
-     * </ul>
-     * Note that Windows will sync changes with domain server.
-     * If not desired, Consider using {@link #dataLocal()} instead.
-     *
-     * <p>Usually you'd like to invoke {@code resolve("<appname>")} on return value to create subdirectory.
-     *
-     * @return path to config directory
-     * @throws NoSuchPathException if it's impossible to acquire path to directory
-     */
-    public static @NotNull Path data() {
-        return DELEGATE.data();
+    /// Directory for the application data:
+    /// - Windows: `%APPDATA%` (`%USERPROFILE%\AppData\Roaming`);
+    /// - macOS: `$HOME/Library/Application Support`;
+    /// - Linux: `$XDG_DATA_HOME` (default: `$HOME/.local/share`).
+    ///
+    /// Note that Windows synchronizes the roaming directory with the domain server. If it's not desired, consider
+    /// using [#dataLocal()] instead.
+    ///
+    /// @return path to the data directory
+    /// @throws NoSuchPathException if it's impossible to determine the path
+    public static Path data() {
+        return delegate().data();
     }
 
-    /**
-     * Directory which can use used to store data:
-     * <ul>
-     * <li>Win:  {@code %USERPROFILE%/AppData/Local};</li>
-     * <li>Unix: {@code $HOME/.local/share}.</li>
-     * </ul>
-     * Usually you'd like to invoke {@code resolve("<appname>")} on return value to create subdirectory.
-     *
-     * @return path to config directory
-     * @throws NoSuchPathException if it's impossible to acquire path to directory
-     */
-    public static @NotNull Path dataLocal() {
-        return DELEGATE.dataLocal();
+    /// Directory for the application data, which is never synchronized:
+    /// - Windows: `%LOCALAPPDATA%` (`%USERPROFILE%\AppData\Local`);
+    /// - macOS: `$HOME/Library/Application Support`;
+    /// - Linux: `$XDG_DATA_HOME` (default: `$HOME/.local/share`).
+    ///
+    /// @return path to the local data directory
+    /// @throws NoSuchPathException if it's impossible to determine the path
+    public static Path dataLocal() {
+        return delegate().dataLocal();
     }
 
-    /**
-     * Temp files directory:
-     * <ul>
-     * <li>Win:  {@code %USERPROFILE%/AppData/Local/Temp};</li>
-     * <li>Unix: {@code /tmp}.</li>
-     * </ul>
-     *
-     * @return path to home directory
-     * @throws NoSuchPathException if it's impossible to acquire path to directory
-     */
-    public static @NotNull Path temp() {
-        return DELEGATE.temp();
+    /// Directory for the temporary files:
+    /// - Windows: `GetTempPath` (usually `%USERPROFILE%\AppData\Local\Temp`);
+    /// - macOS, Linux: `$TMPDIR` (default: `java.io.tmpdir`, then `/tmp`).
+    ///
+    /// @return path to the temp directory
+    /// @throws NoSuchPathException if it's impossible to determine the path
+    public static Path temp() {
+        return delegate().temp();
     }
 
-    /**
-     * Current user Home directory:
-     * <ul>
-     * <li>Win:  {@code %USERPROFILE%};</li>
-     * <li>Unix: {@code ~}.</li>
-     * </ul>
-     *
-     * @return path to home directory
-     * @throws NoSuchPathException if it's impossible to acquire path to directory
-     */
-    public static @NotNull Path home() {
-        return DELEGATE.home();
+    /// Current user home directory:
+    /// - Windows: `%USERPROFILE%`;
+    /// - macOS, Linux: `$HOME` (default: `user.home`).
+    ///
+    /// @return path to the home directory
+    /// @throws NoSuchPathException if it's impossible to determine the path
+    public static Path home() {
+        return delegate().home();
     }
 
-    /**
-     * Desktop directory:
-     * <ul>
-     * <li>Win:  {@code %USERPROFILE%/Desktop};</li>
-     * <li>Unix: {@code ~/Desktop}.</li>
-     * </ul>
-     *
-     * @return path to desktop directory
-     * @throws NoSuchPathException if it's impossible to acquire path to directory
-     */
-    public static @NotNull Path desktop() {
-        return DELEGATE.desktop();
+    /// Desktop directory:
+    /// - Windows: `%USERPROFILE%\Desktop`;
+    /// - macOS: `$HOME/Desktop`;
+    /// - Linux: `$XDG_DESKTOP_DIR` (default: `$HOME/Desktop`).
+    ///
+    /// @return path to the desktop directory
+    /// @throws NoSuchPathException if it's impossible to determine the path
+    public static Path desktop() {
+        return delegate().desktop();
     }
 
-    /**
-     * Documents directory:
-     * <ul>
-     * <li>Win:  {@code %USERPROFILE%/Documents};</li>
-     * <li>Unix: {@code ~/Documents}.</li>
-     * </ul>
-     *
-     * @return path to documents directory
-     * @throws NoSuchPathException if it's impossible to acquire path to directory
-     */
-    public static @NotNull Path documents() {
-        return DELEGATE.documents();
+    /// Documents directory:
+    /// - Windows: `%USERPROFILE%\Documents`;
+    /// - macOS: `$HOME/Documents`;
+    /// - Linux: `$XDG_DOCUMENTS_DIR` (default: `$HOME/Documents`).
+    ///
+    /// @return path to the documents directory
+    /// @throws NoSuchPathException if it's impossible to determine the path
+    public static Path documents() {
+        return delegate().documents();
     }
 
-    /**
-     * Downloads directory:
-     * <ul>
-     * <li>Win:  {@code %USERPROFILE%/Downloads};</li>
-     * <li>Unix: {@code ~/Downloads}.</li>
-     * </ul>
-     *
-     * @return path to downloads directory
-     * @throws NoSuchPathException if it's impossible to acquire path to directory
-     */
-    public static @NotNull Path downloads() {
-        return DELEGATE.downloads();
+    /// Downloads directory:
+    /// - Windows: `%USERPROFILE%\Downloads`;
+    /// - macOS: `$HOME/Downloads`;
+    /// - Linux: `$XDG_DOWNLOAD_DIR` (default: `$HOME/Downloads`).
+    ///
+    /// @return path to the downloads directory
+    /// @throws NoSuchPathException if it's impossible to determine the path
+    public static Path downloads() {
+        return delegate().downloads();
     }
 
-    /**
-     * Music directory:
-     * <ul>
-     * <li>Win:  {@code %USERPROFILE%/Music};</li>
-     * <li>Unix: {@code ~/Music}.</li>
-     * </ul>
-     *
-     * @return path to music directory
-     * @throws NoSuchPathException if it's impossible to acquire path to directory
-     */
-    public static @NotNull Path music() {
-        return DELEGATE.music();
+    /// Music directory:
+    /// - Windows: `%USERPROFILE%\Music`;
+    /// - macOS: `$HOME/Music`;
+    /// - Linux: `$XDG_MUSIC_DIR` (default: `$HOME/Music`).
+    ///
+    /// @return path to the music directory
+    /// @throws NoSuchPathException if it's impossible to determine the path
+    public static Path music() {
+        return delegate().music();
     }
 
-    /**
-     * Pictures directory:
-     * <ul>
-     * <li>Win:  {@code %USERPROFILE%/Pictures};</li>
-     * <li>Unix: {@code ~/Pictures}.</li>
-     * </ul>
-     *
-     * @return path to pictures directory
-     * @throws NoSuchPathException if it's impossible to acquire path to directory
-     */
-    public static @NotNull Path pictures() {
-        return DELEGATE.pictures();
+    /// Pictures directory:
+    /// - Windows: `%USERPROFILE%\Pictures`;
+    /// - macOS: `$HOME/Pictures`;
+    /// - Linux: `$XDG_PICTURES_DIR` (default: `$HOME/Pictures`).
+    ///
+    /// @return path to the pictures directory
+    /// @throws NoSuchPathException if it's impossible to determine the path
+    public static Path pictures() {
+        return delegate().pictures();
     }
 
-    /**
-     * Videos directory:
-     * <ul>
-     * <li>Win:  {@code %USERPROFILE%/Videos};</li>
-     * <li>Unix: {@code ~/Videos}.</li>
-     * </ul>
-     *
-     * @return path to videos directory
-     * @throws NoSuchPathException if it's impossible to acquire path to directory
-     */
-    public static @NotNull Path videos() {
-        return DELEGATE.videos();
+    /// Videos directory:
+    /// - Windows: `%USERPROFILE%\Videos`;
+    /// - macOS: `$HOME/Movies`;
+    /// - Linux: `$XDG_VIDEOS_DIR` (default: `$HOME/Videos`).
+    ///
+    /// @return path to the videos directory
+    /// @throws NoSuchPathException if it's impossible to determine the path
+    public static Path videos() {
+        return delegate().videos();
+    }
+
+    // lazy initialization, the delegate is created on the first call
+    private static final class Holder {
+        static final LocationDelegate DELEGATE = create(Os.current(), Environment.SYSTEM);
     }
 }

@@ -1,74 +1,75 @@
 package io.github.sanyarnd.standardpaths;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.nio.file.Path;
 
-/**
- * MacOS locations.
- *
- * @author Alexander Biryukov
- */
-final class MacLocations implements LocationDelegate {
-    private static final String NOT_IMPLEMENTED_MESSAGE = "Not implemented";
-
-    @Override
-    public @NotNull Path cache() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+/// macOS locations.
+///
+/// Follows the [macOS Library Directory Details][guide].
+///
+/// [guide]:
+/// https://developer.apple.com/library/archive/documentation/FileManagement/Conceptual/FileSystemProgrammingGuide/MacOSXDirectories/MacOSXDirectories.html
+///
+/// @author Alexander Biryukov
+final class MacLocations extends PosixLocations {
+    MacLocations(final Environment environment) {
+        super(environment);
     }
 
     @Override
-    public @NotNull Path config() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    public Path cache() {
+        return library().resolve("Caches");
     }
 
     @Override
-    public @NotNull Path data() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    public Path config() {
+        return applicationSupport();
     }
 
     @Override
-    public @NotNull Path dataLocal() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    public Path data() {
+        return applicationSupport();
     }
 
     @Override
-    public @NotNull Path temp() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    public Path dataLocal() {
+        return applicationSupport();
     }
 
     @Override
-    public @NotNull Path home() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    public Path desktop() {
+        return home().resolve("Desktop");
     }
 
     @Override
-    public @NotNull Path desktop() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    public Path documents() {
+        return home().resolve("Documents");
     }
 
     @Override
-    public @NotNull Path documents() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    public Path downloads() {
+        return home().resolve("Downloads");
     }
 
     @Override
-    public @NotNull Path downloads() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    public Path music() {
+        return home().resolve("Music");
     }
 
     @Override
-    public @NotNull Path music() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    public Path pictures() {
+        return home().resolve("Pictures");
     }
 
     @Override
-    public @NotNull Path pictures() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    public Path videos() {
+        return home().resolve("Movies");
     }
 
-    @Override
-    public @NotNull Path videos() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    private Path library() {
+        return home().resolve("Library");
+    }
+
+    private Path applicationSupport() {
+        return library().resolve("Application Support");
     }
 }

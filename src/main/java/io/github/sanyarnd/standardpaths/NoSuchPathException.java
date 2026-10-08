@@ -1,24 +1,24 @@
 package io.github.sanyarnd.standardpaths;
 
-import org.jetbrains.annotations.NotNull;
+import org.jspecify.annotations.Nullable;
 
-/**
- * Indicates that underlying OS system is either damaged or in malformed state.
- *
- * <p>Exception is thrown only in very non-standard situations,
- * e.g. system is missing the basic environment variables or user directories are owned by others
- *
- * @author Alexander Biryukov
- */
+/// Indicates that the path can't be determined.
+///
+/// The exception is thrown only in non-standard situations, e.g. the system is missing the basic environment
+/// variables or a system call failed.
+///
+/// @author Alexander Biryukov
 public class NoSuchPathException extends RuntimeException {
-    /**
-     * Constructs a new exception with the specified detail message. The cause is not initialized, and may subsequently
-     * be initialized by a call to {@link #initCause}.
-     *
-     * @param message the detail message. The detail message is saved for later retrieval by the {@link #getMessage()}
-     *                method.
-     */
-    public NoSuchPathException(final @NotNull String message) {
+    private static final long serialVersionUID = 1L;
+
+    /// Constructs a new exception with the specified detail message.
+    ///
+    /// @param message the detail message
+    public NoSuchPathException(final @Nullable String message) {
         super(message);
+    }
+
+    NoSuchPathException(final @Nullable String message, final @Nullable Throwable cause) {
+        super(message, cause);
     }
 }
