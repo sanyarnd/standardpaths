@@ -38,13 +38,13 @@ Maven:
 <dependency>
     <groupId>io.github.sanyarnd</groupId>
     <artifactId>standard-paths</artifactId>
-    <version>1.0.2</version>
+    <version>2.0.0</version>
 </dependency>
 ```
 
 Gradle:
 ```kotlin
-implementation("io.github.sanyarnd:standard-paths:1.0.2")
+implementation("io.github.sanyarnd:standard-paths:2.0.0")
 ```
 
 Jars are also available in [GitHub Packages](https://github.com/sanyarnd/standardpaths/packages)
