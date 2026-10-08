@@ -1,59 +1,37 @@
 package io.github.sanyarnd.standardpaths;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Locale;
 
-/**
- * Operation system enumeration.
- *
- * @author Alexander Biryukov
- */
+/// Operating system family.
+///
+/// @author Alexander Biryukov
 enum Os {
-    /**
-     * Microsoft Windows operating system.
-     */
+    /// Microsoft Windows.
     WINDOWS,
-    /**
-     * Linux-based operating system.
-     */
-    LINUX,
-    /**
-     * Apple Macintosh operating system.
-     */
+    /// Apple macOS.
     MAC,
-    /**
-     * Other OSes, also if `os.name` is not defined.
-     */
-    UNKNOWN;
+    /// Linux, BSD and other Unix-like systems, which follow the XDG Base Directory Specification.
+    UNIX;
 
-    private static final String OS_NAME = System.getProperty("os.name").toLowerCase(Locale.ENGLISH);
-
-    /**
-     * Current OS.
-     *
-     * @return current OS
-     */
-    public static @NotNull Os current() {
-        final Os win = OS_NAME.contains("win") ? WINDOWS : UNKNOWN;
-        final Os nonLinux = OS_NAME.contains("mac") ? MAC : win;
-
-        return OS_NAME.contains("linux") ? LINUX : nonLinux;
+    /// Current operating system.
+    ///
+    /// @return current operating system
+    static Os current() {
+        return of(System.getProperty("os.name", ""));
     }
 
-    public static boolean isWindows() {
-        return current() == WINDOWS;
-    }
-
-    public static boolean isLinux() {
-        return current() == LINUX;
-    }
-
-    public static boolean isMac() {
-        return current() == MAC;
-    }
-
-    public static boolean isUnknown() {
-        return current() == UNKNOWN;
+    /// Detects operating system by the `os.name` system property value.
+    ///
+    /// @param osName value of `os.name`
+    /// @return operating system family, [#UNIX] if unknown
+    static Os of(final String osName) {
+        final String name = osName.toLowerCase(Locale.ROOT);
+        if (name.startsWith("windows")) {
+            return WINDOWS;
+        }
+        if (name.startsWith("mac") || name.startsWith("darwin")) {
+            return MAC;
+        }
+        return UNIX;
     }
 }

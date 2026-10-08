@@ -1,74 +1,90 @@
 package io.github.sanyarnd.standardpaths;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.nio.file.Path;
+import java.util.Optional;
 
-/**
- * MacOS locations.
- *
- * @author Alexander Biryukov
- */
-final class MacLocations implements LocationDelegate {
-    private static final String NOT_IMPLEMENTED_MESSAGE = "Not implemented";
+/// macOS locations.
+///
+/// Follows the [macOS Library Directory Details][guide].
+///
+/// [guide]:
+/// https://developer.apple.com/library/archive/documentation/FileManagement/Conceptual/FileSystemProgrammingGuide/MacOSXDirectories/MacOSXDirectories.html
+///
+/// @author Alexander Biryukov
+final class MacLocations extends PosixLocations {
+    private static final String APPLICATION_SUPPORT = "Library/Application Support";
 
-    @Override
-    public @NotNull Path cache() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    MacLocations(final Environment environment) {
+        super(environment);
     }
 
     @Override
-    public @NotNull Path config() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    public Optional<Path> cache() {
+        return inHome("Library/Caches");
     }
 
     @Override
-    public @NotNull Path data() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    public Optional<Path> config() {
+        return inHome(APPLICATION_SUPPORT);
     }
 
     @Override
-    public @NotNull Path dataLocal() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    public Optional<Path> data() {
+        return inHome(APPLICATION_SUPPORT);
     }
 
     @Override
-    public @NotNull Path temp() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    public Optional<Path> dataLocal() {
+        return inHome(APPLICATION_SUPPORT);
     }
 
     @Override
-    public @NotNull Path home() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    public Optional<Path> state() {
+        return inHome(APPLICATION_SUPPORT);
     }
 
     @Override
-    public @NotNull Path desktop() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    public Optional<Path> runtime() {
+        return Optional.empty();
     }
 
     @Override
-    public @NotNull Path documents() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    public Optional<Path> desktop() {
+        return inHome("Desktop");
     }
 
     @Override
-    public @NotNull Path downloads() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    public Optional<Path> documents() {
+        return inHome("Documents");
     }
 
     @Override
-    public @NotNull Path music() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    public Optional<Path> downloads() {
+        return inHome("Downloads");
     }
 
     @Override
-    public @NotNull Path pictures() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    public Optional<Path> music() {
+        return inHome("Music");
     }
 
     @Override
-    public @NotNull Path videos() {
-        throw new NoSuchPathException(NOT_IMPLEMENTED_MESSAGE);
+    public Optional<Path> pictures() {
+        return inHome("Pictures");
+    }
+
+    @Override
+    public Optional<Path> videos() {
+        return inHome("Movies");
+    }
+
+    @Override
+    public Optional<Path> templates() {
+        return Optional.empty();
+    }
+
+    @Override
+    public Optional<Path> publicShare() {
+        return inHome("Public");
     }
 }

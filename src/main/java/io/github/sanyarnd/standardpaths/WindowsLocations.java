@@ -1,179 +1,163 @@
 package io.github.sanyarnd.standardpaths;
 
-import com.sun.jna.Native;
-import com.sun.jna.Pointer;
-import com.sun.jna.platform.win32.Advapi32;
-import com.sun.jna.platform.win32.Guid;
-import com.sun.jna.platform.win32.Kernel32;
-import com.sun.jna.platform.win32.Kernel32Util;
-import com.sun.jna.platform.win32.KnownFolders;
-import com.sun.jna.platform.win32.Shell32;
-import com.sun.jna.platform.win32.ShlObj;
-import com.sun.jna.platform.win32.WinError;
-import com.sun.jna.platform.win32.WinNT;
-import com.sun.jna.ptr.IntByReference;
-import com.sun.jna.ptr.PointerByReference;
-import org.jetbrains.annotations.NotNull;
-
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Objects;
+import java.util.Map;
 import java.util.Optional;
-import java.util.stream.Stream;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import org.jspecify.annotations.Nullable;
 
-/**
- * Windows locations.
- *
- * @author Alexander Biryukov
- */
+/// Windows locations.
+///
+/// Application data directories are read from the environment, user directories (Desktop, Documents, etc.) are read
+/// from the registry, which is queried once.
+///
+/// @author Alexander Biryukov
 final class WindowsLocations implements LocationDelegate {
-    /**
-     * Get the known folder path.
-     *
-     * @param folderId known folder ID
-     * @return path to known folder
-     * @throws NoSuchPathException if unable to retrieve path
-     */
-    private static @NotNull Path knownFolder(final Guid.@NotNull GUID folderId) {
-        final PointerByReference ppStr = new PointerByReference();
-        final WinNT.HRESULT ret = Shell32.INSTANCE.SHGetKnownFolderPath(folderId,
-                ShlObj.KNOWN_FOLDER_FLAG.DONT_VERIFY.getFlag(), null, ppStr);
+    private static final Pattern VARIABLE = Pattern.compile("%([^%]+)%");
 
-        if (WinError.S_OK.equals(ret)) {
-            final Pointer pStr = ppStr.getValue();
-            final StringBuilder sb = new StringBuilder();
-            // we'll never reach 4096 anyway
-            final long maxLengthInBytes = 4096;
-            for (long i = 0; i < maxLengthInBytes; ++i) {
-                // SHGetKnownFolderPath returns wchar_t string, and offset is calculated in bytes
-                // so we actually need i*2 for correct indexing
-                final char c = pStr.getChar(i * 2);
-                // function returns null-terminated string
-                if (c == '\u0000') {
-                    break;
-                }
-                sb.append(c);
-            }
-            return Paths.get(sb.toString()).toAbsolutePath();
-        } else {
-            final String message = getLastErrorString();
-            throw new NoSuchPathException(message);
-        }
-    }
+    private final WindowsRegistry registry;
+    private final Environment env;
+    private volatile @Nullable Map<String, String> shellFolders;
 
-    private static @NotNull String getLastErrorString() {
-        final int errorCode = Kernel32.INSTANCE.GetLastError();
-        return Kernel32Util.formatMessage(errorCode);
-    }
-
-    private static @NotNull Path localAppData() {
-        return knownFolder(KnownFolders.FOLDERID_LocalAppData);
-    }
-
-    private static @NotNull Path roamingAppData() {
-        return knownFolder(KnownFolders.FOLDERID_RoamingAppData);
+    WindowsLocations(final WindowsRegistry windowsRegistry, final Environment environment) {
+        registry = windowsRegistry;
+        env = environment;
     }
 
     @Override
-    public @NotNull Path cache() {
+    public Optional<Path> home() {
+        return env.propertyPath("user.home").or(() -> env.envPath("USERPROFILE"));
+    }
+
+    @Override
+    public Optional<Path> temp() {
+        return env.propertyPath("java.io.tmpdir").or(() -> env.envPath("TEMP")).or(() -> env.envPath("TMP"));
+    }
+
+    @Override
+    public Optional<Path> cache() {
         return localAppData();
     }
 
     @Override
-    public @NotNull Path config() {
-        return localAppData();
-    }
-
-    @Override
-    public @NotNull Path data() {
+    public Optional<Path> config() {
         return roamingAppData();
     }
 
     @Override
-    public @NotNull Path dataLocal() {
+    public Optional<Path> data() {
+        return roamingAppData();
+    }
+
+    @Override
+    public Optional<Path> dataLocal() {
         return localAppData();
     }
 
     @Override
-    public @NotNull Path temp() {
-        return Paths.get(Kernel32Util.getTempPath()).toAbsolutePath();
+    public Optional<Path> state() {
+        return localAppData();
     }
 
     @Override
-    public @NotNull Path home() {
-        return userenvProfileDirectory().orElse(environmentProfileDirectory());
-    }
-
-    private @NotNull Optional<Path> userenvProfileDirectory() {
-        // get process handle and create associated query token (required by GetUserProfileDirectory)
-        final WinNT.HANDLE processHandle = Kernel32.INSTANCE.GetCurrentProcess();
-        final WinNT.HANDLEByReference pToken = new WinNT.HANDLEByReference();
-        final boolean isOpened = Advapi32.INSTANCE.OpenProcessToken(processHandle, WinNT.TOKEN_QUERY, pToken);
-
-        if (isOpened) {
-            final IntByReference pSize = new IntByReference(0);
-            // by documentation, such call must return false with pSize containing required buffer size
-            final boolean failedCall = Userenv.INSTANCE.GetUserProfileDirectory(pToken.getValue(), null, pSize);
-            if (!failedCall && pSize.getValue() > 0) {
-                // now it's the real call
-                final char[] buf = new char[pSize.getValue()];
-                final boolean userDirRetrieved =
-                        Userenv.INSTANCE.GetUserProfileDirectory(pToken.getValue(), buf, pSize);
-
-                // close token once we don't need it, ignore ret value
-                Kernel32.INSTANCE.CloseHandle(pToken.getValue());
-
-                if (userDirRetrieved) {
-                    final String userDir = Native.toString(buf);
-                    final Path path = Paths.get(userDir).toAbsolutePath();
-                    return Optional.of(path);
-                }
-            } else {
-                // close token once we don't need it, ignore ret value
-                Kernel32.INSTANCE.CloseHandle(pToken.getValue());
-            }
-        }
+    public Optional<Path> runtime() {
         return Optional.empty();
     }
 
-    private static @NotNull Path environmentProfileDirectory() {
-        final String userProfile = System.getenv("USERPROFILE");
-        final String homeVariables = System.getenv("HOMEDRIVE") + System.getenv("HOMEPATH");
-        final String homeVariable = System.getenv("HOME");
-
-        return Stream.of(userProfile, homeVariables, homeVariable)
-                .filter(Objects::nonNull).findFirst()
-                .map(Paths::get)
-                .orElseThrow(() -> new NoSuchPathException("Unable to retrieve path for directory"));
+    @Override
+    public Optional<Path> desktop() {
+        return userDir("Desktop", "Desktop");
     }
 
     @Override
-    public @NotNull Path desktop() {
-        return knownFolder(KnownFolders.FOLDERID_Desktop);
+    public Optional<Path> documents() {
+        return userDir("Personal", "Documents");
     }
 
     @Override
-    public @NotNull Path documents() {
-        return knownFolder(KnownFolders.FOLDERID_Documents);
+    public Optional<Path> downloads() {
+        return userDir("{374DE290-123F-4565-9164-39C4925E467B}", "Downloads");
     }
 
     @Override
-    public @NotNull Path downloads() {
-        return knownFolder(KnownFolders.FOLDERID_Downloads);
+    public Optional<Path> music() {
+        return userDir("My Music", "Music");
     }
 
     @Override
-    public @NotNull Path music() {
-        return knownFolder(KnownFolders.FOLDERID_Music);
+    public Optional<Path> pictures() {
+        return userDir("My Pictures", "Pictures");
     }
 
     @Override
-    public @NotNull Path pictures() {
-        return knownFolder(KnownFolders.FOLDERID_Pictures);
+    public Optional<Path> videos() {
+        return userDir("My Video", "Videos");
     }
 
     @Override
-    public @NotNull Path videos() {
-        return knownFolder(KnownFolders.FOLDERID_Videos);
+    public Optional<Path> templates() {
+        return shellFolder("Templates")
+                .or(() -> roamingAppData()
+                        .map(path ->
+                                path.resolve("Microsoft").resolve("Windows").resolve("Templates")));
+    }
+
+    @Override
+    public Optional<Path> publicShare() {
+        return env.envPath("PUBLIC");
+    }
+
+    // local and roaming directories are shared by different kinds of data
+    @Override
+    public Optional<Path> appDir(final Optional<Path> base, final String app, final String kind) {
+        return base.map(path -> path.resolve(app).resolve(kind));
+    }
+
+    private Optional<Path> localAppData() {
+        return env.envPath("LOCALAPPDATA")
+                .or(() -> shellFolder("Local AppData"))
+                .or(() -> inHome("AppData").map(path -> path.resolve("Local")));
+    }
+
+    private Optional<Path> roamingAppData() {
+        return env.envPath("APPDATA")
+                .or(() -> shellFolder("AppData"))
+                .or(() -> inHome("AppData").map(path -> path.resolve("Roaming")));
+    }
+
+    private Optional<Path> userDir(final String valueName, final String fallback) {
+        return shellFolder(valueName).or(() -> inHome(fallback));
+    }
+
+    private Optional<Path> inHome(final String relative) {
+        return home().map(path -> path.resolve(relative));
+    }
+
+    private Optional<Path> shellFolder(final String valueName) {
+        final String value = shellFolders().get(valueName);
+        return value == null ? Optional.empty() : Environment.absolutePath(expand(value));
+    }
+
+    private Map<String, String> shellFolders() {
+        Map<String, String> result = shellFolders;
+        if (result == null) {
+            result = registry.userShellFolders();
+            shellFolders = result;
+        }
+        return result;
+    }
+
+    // expands %VARIABLE% references, unknown variables are kept as is
+    private String expand(final String value) {
+        final Matcher matcher = VARIABLE.matcher(value);
+        final StringBuilder sb = new StringBuilder();
+        int last = 0;
+        while (matcher.find()) {
+            final String replacement = env.getenv(matcher.group(1));
+            sb.append(value, last, matcher.start()).append(replacement == null ? matcher.group() : replacement);
+            last = matcher.end();
+        }
+        return sb.append(value.substring(last)).toString();
     }
 }

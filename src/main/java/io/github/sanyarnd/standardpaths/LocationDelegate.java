@@ -1,48 +1,51 @@
 package io.github.sanyarnd.standardpaths;
 
-import org.jetbrains.annotations.NotNull;
-
 import java.nio.file.Path;
+import java.util.Optional;
 
-/**
- * Location delegate interface, mimics {@link StandardPaths}, helps to improve code readability.
- *
- * @author Alexander Biryukov
- */
+/// Platform-specific locations, mirrors [StandardPaths].
+///
+/// @author Alexander Biryukov
 interface LocationDelegate {
-    @NotNull
-    Path cache();
+    Optional<Path> home();
 
-    @NotNull
-    Path config();
+    Optional<Path> temp();
 
-    @NotNull
-    Path data();
+    Optional<Path> cache();
 
-    @NotNull
-    Path dataLocal();
+    Optional<Path> config();
 
-    @NotNull
-    Path temp();
+    Optional<Path> data();
 
-    @NotNull
-    Path home();
+    Optional<Path> dataLocal();
 
-    @NotNull
-    Path desktop();
+    Optional<Path> state();
 
-    @NotNull
-    Path documents();
+    Optional<Path> runtime();
 
-    @NotNull
-    Path downloads();
+    Optional<Path> desktop();
 
-    @NotNull
-    Path music();
+    Optional<Path> documents();
 
-    @NotNull
-    Path pictures();
+    Optional<Path> downloads();
 
-    @NotNull
-    Path videos();
+    Optional<Path> music();
+
+    Optional<Path> pictures();
+
+    Optional<Path> videos();
+
+    Optional<Path> templates();
+
+    Optional<Path> publicShare();
+
+    /// Application directory inside the base directory.
+    ///
+    /// @param base base directory, e.g. [#cache()]
+    /// @param app application name
+    /// @param kind directory kind (`cache`, `config`, etc.), used where base directories are shared
+    /// @return application directory
+    default Optional<Path> appDir(final Optional<Path> base, final String app, final String kind) {
+        return base.map(path -> path.resolve(app));
+    }
 }
